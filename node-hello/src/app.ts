@@ -1,7 +1,10 @@
+import { PrismaClient } from "@prisma/client";
 import  express, { NextFunction, Request, Response }  from "express";
+
 
 const app = express();
 const PORT = 3000;
+const prisma = new PrismaClient();
 
 app.use(express.json());
 
@@ -11,19 +14,16 @@ interface Todo {
     done: boolean;
 }
 
-let todos: Todo[] = [];
-let nextId = 1;
-
-
 app.get("/", (req:Request, res:Response) => {
     res.send('api server running')
 })
 
-app.get("/api/todos", (req:Request, res: Response) => {
+app.get("/api/todos", async (req:Request, res: Response) => {
+    const todos = await prisma.todo.findMany();
     res.json(todos);
 })
 
-app.post("/api/todos", (req:Request, res: Response) => {
+app.post("/api/todos", async (req:Request, res: Response) => {
     const {text} = req.body;
 
     if(typeof text !== "string"|| text.trim() === "") {
@@ -31,39 +31,32 @@ app.post("/api/todos", (req:Request, res: Response) => {
         return 
     }
 
-    const newTodo:Todo = {
-        id: nextId++,
-        done:false,
-        text: text.trim()
-    }
+    const newTodo = await prisma.todo.create({
+        data: {text: text.trim()}
+    });
 
-    todos.push(newTodo);
     res.status(201).json(newTodo);
 })
 
 
-app.patch("/api/todos/:id", (req:Request, res:Response) => {
+app.patch("/api/todos/:id", async (req:Request, res:Response) => {
     const id = Number(req.params.id);
-    const todo = todos.find(t => t.id === id);
+    const todo = await prisma.todo.findUnique({where: {id}});
     if(!todo) {
         res.status(404).json({error: 'not found'});
         return 
     }
 
-    todo.done = !todo.done;
-    res.json(todo);
+    const updated = await prisma.todo.update({
+        where: {id},
+        data: {done: !todo.done }
+    });
+    res.json(updated);
 })
 
-app.delete("/api/todos/:id", (req:Request, res:Response) => {
+app.delete("/api/todos/:id", async (req:Request, res:Response) => {
     const id = Number(req.params.id);
-    const idx = todos.findIndex(t => t.id === id);
-    
-    if(idx === -1) {
-        res.status(404).json({error: 'not found'})
-        return 
-    }
-
-    todos.splice(idx, 1);
+     await prisma.todo.delete({where: {id}});
     res.sendStatus(204);
 
 })
