@@ -26,10 +26,9 @@ app.get("/api/todos", (req:Request, res: Response) => {
 app.post("/api/todos", (req:Request, res: Response) => {
     const {text} = req.body;
 
-    
-    res.json(todos);
     if(typeof text !== "string"|| text.trim() === "") {
-        return res.status(400).json({error:"text 필수"});
+        res.status(400).json({error:"text 필수"});
+        return 
     }
 
     const newTodo:Todo = {
@@ -47,7 +46,8 @@ app.patch("/api/todos/:id", (req:Request, res:Response) => {
     const id = Number(req.params.id);
     const todo = todos.find(t => t.id === id);
     if(!todo) {
-        return res.status(404).json({error: 'not found'});
+        res.status(404).json({error: 'not found'});
+        return 
     }
 
     todo.done = !todo.done;
@@ -59,7 +59,8 @@ app.delete("/api/todos/:id", (req:Request, res:Response) => {
     const idx = todos.findIndex(t => t.id === id);
     
     if(idx === -1) {
-        return res.status(404).json({error: 'not found'})
+        res.status(404).json({error: 'not found'})
+        return 
     }
 
     todos.splice(idx, 1);
